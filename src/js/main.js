@@ -6,6 +6,9 @@ import { TextureLoader } from 'three/src/loaders/TextureLoader.js';
 
 import { LeafParticles } from './LeafParticles.js';
 import { ButterflyScene } from './ButterflyScene.js';
+import { WillowTree } from './WillowTree.js';
+import { Vine } from './Vine.js';
+
 
 import waterVertexShader from '../glsl/water.vert?raw';
 import waterFragmentShader from '../glsl/water.frag?raw';
@@ -49,7 +52,7 @@ loader.load('/tree/scene.gltf', (gltf) => {
         }
     });
 
-    scene.add(tree);
+    //scene.add(tree);
 }, undefined, (error) => {
     console.error('Error loading the tree model:', error);
 });
@@ -110,6 +113,12 @@ butterflies.push(new ButterflyScene(scene, new THREE.Vector3(0, 2, 0), 4.7));
 butterflies.push(new ButterflyScene(scene, new THREE.Vector3(0, 1, 0), 6.7));
 butterflies.push(new ButterflyScene(scene, new THREE.Vector3(0, 1, 0), 5.7));
 
+const willowTree = new WillowTree(scene);
+scene.add(willowTree);
+
+const vines = willowTree.vines; //[];
+//willowTree.vine_points.forEach(vine_point => vines.push(new Vine(scene, vine_point)));
+
 // Animation Loop
 function animate() {
     requestAnimationFrame(animate);
@@ -119,6 +128,8 @@ function animate() {
     leaves.update();
     butterflies.forEach(butterfly => butterfly.update());
     // butterflyScene.update();
+
+    vines.forEach(vine => vine.update());
 
     controls.update();
     renderer.render(scene, camera);
