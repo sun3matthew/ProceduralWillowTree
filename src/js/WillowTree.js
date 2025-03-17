@@ -4,6 +4,18 @@ import { Vine } from './Vine.js';
 
 export class WillowTree {
     constructor(scene) {
+        const textureLoader = new THREE.TextureLoader();
+        this.baseColor = textureLoader.load('/tree/textures/Tree_Trunk_Mat_baseColor.jpeg');
+        this.metallicRoughness = textureLoader.load('/tree/textures/Tree_Trunk_Mat_metallicRoughness.png');
+        this.normalMap = textureLoader.load('/tree/textures/Tree_Trunk_Mat_normal.png');
+        this.material = new THREE.MeshStandardMaterial({
+            map: this.baseColor,
+            metalnessMap: this.metallicRoughness,
+            roughnessMap: this.metallicRoughness,
+            normalMap: this.normalMap,
+            // normalScale: new THREE.Vector2(0.5, 0.5)
+        });
+
         this.scene = scene;
         this.num_branches = 8;
         this.branches = [];
@@ -13,8 +25,9 @@ export class WillowTree {
     }
 
     initTree() {
+
         // Every branch originates from the trunk
-        let default_trunk_points = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.1*Math.random(), 1, 0.1*Math.random())];
+        let default_trunk_points = [new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.1*Math.random(), 2, 0.1*Math.random())];
         
         // Each branch will spurt away from the trunk in some x, y, z direction.
         // This array stores those starting directions for 1/4 of the total branches.
@@ -87,7 +100,7 @@ export class WillowTree {
         }
         
         // Draw branch
-        let branch = this.drawBranch(branch_points, start_thickness);
+        let branch = this.drawBranch(branch_points, start_thickness, remaining_branch_length);
         this.branches.push(branch);
 
         // Do not create divergence if end of branch is reached
@@ -108,44 +121,83 @@ export class WillowTree {
         // Make a new branch
         let diverged_branch_points = this.addBranch(new_branch_points, remaining_branch_length - divergence_point, new_x_direction, new_y_direction, new_z_direction, 0, new_thickness);
         this.vine_points.push(diverged_branch_points[diverged_branch_points.length - 1])
-        this.vines.push(new Vine(this.scene, diverged_branch_points[diverged_branch_points.length - 1]))
-        this.vines.push(new Vine(this.scene, diverged_branch_points[(remaining_branch_length - divergence_point)*Math.floor(Math.random())]))
+
+        // this.vines.push(new Vine(this.scene, diverged_branch_points[diverged_branch_points.length - 1]))
+        // this.vines.push(new Vine(this.scene, diverged_branch_points[(remaining_branch_length - divergence_point)*Math.floor(Math.random())]))
+        // this.addVines(diverged_branch_points);
 
         return branch_points;
     }
 
-    drawBranch(branch_points, start_thickness) {
+    // addVines(branch_points) {
+    //     const numVines = 10;
+    //     for (let i = 0; i < numVines; i++) {
+    //         let vine_point = branch_points[Math.floor(Math.random() * branch_points.length)];
+    //         this.vines.push(new Vine(this.scene, vine_point));
+    //     }
+    // }
+
+    drawBranch(branch_points, start_thickness, remaining_branch_length) {
         // Create new spline with 200 drawable points
         let spline = new HermiteSpline();
-        const numPoints = 400;
+        const numPoints = 10;
         
         // Add branch points and tangents to spline
         for (let i = 0; i < branch_points.length; i++) {
             const point = branch_points[i];
             spline.addPoint(point.x, point.y, point.z, 0, 0, 0);
             if (i > 1 && i < branch_points.length - 1) {
-              const prev_point = branch_points[i-1];
-              const next_point = branch_points[i+1];
-              const t_x = next_point.x - prev_point.x;
-              const t_y = next_point.y - prev_point.y;
-              const t_z = next_point.z - prev_point.z;
-              spline.setTangent(i,  t_x, t_y, t_z);
+                const prev_point = branch_points[i - 1];
+                const next_point = branch_points[i + 1];
+                const t_x = next_point.x - prev_point.x;
+                const t_y = next_point.y - prev_point.y;
+                const t_z = next_point.z - prev_point.z;
+                spline.setTangent(i, t_x, t_y, t_z);
             }
-            
         }
         
         // Interpolate between control points and draw branches
-        for (let i = 0; i <= numPoints; i++) {
+        let prevPoint = spline.getPoint(0);
+        let prevThickness = start_thickness;
+        
+        for (let i = 1; i <= numPoints; i++) {
             let t = i / numPoints;
             let point = spline.getPoint(t);
-            let sphereGeometry = new THREE.SphereGeometry(start_thickness * Math.exp(-1* 2 * t), 8, 8);
-            let material = new THREE.MeshStandardMaterial({ color: 0x8B5A2B });
-            let sphere = new THREE.Mesh(sphereGeometry, material);
-            sphere.position.copy(point);
-            this.scene.add(sphere);
-        }
+            let thickness = start_thickness * Math.exp(-2 * t);
 
-        return spline;
+            if (i == numPoints) {
+                thickness = 0;
+            }
+            
+            // Compute direction vector
+            let direction = new THREE.Vector3().subVectors(point, prevPoint).normalize();
+            let midPoint = new THREE.Vector3().addVectors(point, prevPoint).multiplyScalar(0.5);
+            let height = prevPoint.distanceTo(point) + 0.03; //! bad code, adjust to "close" gaps
+            
+            // Create cylinder geometry
+            let cylinderGeometry = new THREE.CylinderGeometry(thickness, prevThickness, height, 8);
+            let cylinder = new THREE.Mesh(cylinderGeometry, this.material);
+            
+            // Align cylinder with the branch direction
+            let quaternion = new THREE.Quaternion();
+            let up = new THREE.Vector3(0, 1, 0);
+            quaternion.setFromUnitVectors(up, direction);
+            
+            cylinder.position.copy(midPoint);
+            cylinder.setRotationFromQuaternion(quaternion);
+            
+            this.scene.add(cylinder);
+            
+            // Update previous point and thickness
+            prevPoint = point;
+            prevThickness = thickness;
+
+            if (remaining_branch_length < 7){
+                this.vines.push(new Vine(this.scene, point));
+            }
+        }
         
+        return spline;
     }
+    
 }

@@ -32,31 +32,6 @@ const skybox = new THREE.CubeTextureLoader().load([
 
 scene.background = skybox; // Set skybox as scene background
 
-const loader = new GLTFLoader();
-loader.load('/tree/scene.gltf', (gltf) => {
-    const tree = gltf.scene;
-    tree.position.set(0, 0, 0); // Adjust position
-	const scale = 0.01;
-    tree.scale.set(scale, scale, scale); // Adjust scale
-
-	tree.traverse((child) => {
-        if (child.isMesh) {
-            child.material.depthWrite = true;  // Ensures depth is written correctly
-            child.material.depthTest = true;   // Enables proper depth testing
-            
-            // Fix transparency issues
-            if (child.material.transparent) {
-                child.material.alphaTest = 0.5; // Prevents sorting issues for transparent textures
-                child.material.side = THREE.DoubleSide; // Ensures leaves are visible from both sides
-            }
-        }
-    });
-
-    //scene.add(tree);
-}, undefined, (error) => {
-    console.error('Error loading the tree model:', error);
-});
-
 // Water - Infinite Reflector Plane
 const normalMap = new TextureLoader().load('/textures/water-remap.jpg');
 normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping; // Seamless tiling
@@ -76,9 +51,6 @@ const water = new Reflector(waterGeometry, {
     envMap: skybox, // Use the skybox as the reflection source
     envMapIntensity: 1.0
 });
-
-// console.log(customReflectionShader);
-
 
 water.rotation.x = -Math.PI / 2;
 water.position.y = 0;
@@ -105,13 +77,9 @@ const leaves = new LeafParticles(scene);
 
 // const butterflyScene = new ButterflyScene(scene);
 const butterflies = [];
-butterflies.push(new ButterflyScene(scene, new THREE.Vector3(0, 3, 0), 3.4));
-butterflies.push(new ButterflyScene(scene, new THREE.Vector3(0, 2, 0), 2.6));
-butterflies.push(new ButterflyScene(scene, new THREE.Vector3(0, 1, 0), 2.5));
-butterflies.push(new ButterflyScene(scene, new THREE.Vector3(0, 2, 0), 3.7));
-butterflies.push(new ButterflyScene(scene, new THREE.Vector3(0, 2, 0), 4.7));
-butterflies.push(new ButterflyScene(scene, new THREE.Vector3(0, 1, 0), 6.7));
-butterflies.push(new ButterflyScene(scene, new THREE.Vector3(0, 1, 0), 5.7));
+for (let i = 0; i < 10; i++) {
+    butterflies.push(new ButterflyScene(scene, new THREE.Vector3(Math.random() * 4 - 3, Math.random() * 2 + 1, Math.random() * 4 - 3), Math.random() * 5 + 1));
+}
 
 const willowTree = new WillowTree(scene);
 scene.add(willowTree);

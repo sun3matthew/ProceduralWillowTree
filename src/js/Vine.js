@@ -15,13 +15,20 @@ export class Vine {
 
         // Number of particles tied to the height of the vine; the higher the viner, the more points we have
         this.num_particles = 4+4*(Math.floor(vine_point.y*Math.random())+2);
-        this.num_vine_leaves = 6*this.num_particles;
+        // this.num_vine_leaves = 6*this.num_particles;
+        this.num_vine_leaves = this.num_particles / 4;
 
         // Spring stuff
         const mass = 0.01;
         const damping = 500+500*Math.random();
         const elasticity = 25+25*Math.random();
         const rest_length = 0.1;
+
+        // const mass = 0.01;
+        // const damping = 1000;
+        // const elasticity = 100;
+
+        // const rest_length = 0;
 
         // Spheres to draw vine
         this.vine_leaves = []
@@ -52,27 +59,66 @@ export class Vine {
 
         let color_choices = [0x1E5515, 0x1E5615, 0x1E5415, 0x1E6515, 0x1E4615, 0x1E7415, 0x1E6515, 0x1E2415, 0x1E8815]
 
-        // Add all vine leaves to the scene
+        // // Add all vine leaves to the scene
+        // for (let i = 0; i < this.num_vine_leaves; i++) {
+        //     let point = new THREE.Vector3(0, 0, 0);
+            
+        //     let torusGeometry = new THREE.TorusGeometry(
+        //         0.0125 + 0.00625 * Math.random(), // Radius
+        //         0.005, // Tube radius (thickness)
+        //         2, // Radial segments
+        //         4 // Tubular segments
+        //     );
+
+        //     let color = color_choices[Math.floor(Math.random() * 6)];
+        //     let material = new THREE.MeshStandardMaterial({ color: color });
+
+        //     let torus = new THREE.Mesh(torusGeometry, material);
+        //     torus.position.copy(point);
+            
+        //     torus.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
+            
+        //     this.scene.add(torus);
+        //     this.vine_leaves.push(torus);
+        // }
+
+        const textureLoader = new THREE.TextureLoader();
+
+        const texturePaths = [
+            '/textures/willow/Layer 1.png',
+            '/textures/willow/Layer 2.png',
+            '/textures/willow/Layer 3.png',
+            '/textures/willow/Layer 4.png',
+            '/textures/willow/Layer 5.png'
+        ];
+        
+        this.textures = texturePaths.map(path => textureLoader.load(path));
+
         for (let i = 0; i < this.num_vine_leaves; i++) {
             let point = new THREE.Vector3(0, 0, 0);
-            
-            let torusGeometry = new THREE.TorusGeometry(
-                0.0125 + 0.00625 * Math.random(), // Radius
-                0.005, // Tube radius (thickness)
-                8, // Radial segments
-                16 // Tubular segments
-            );
+            let texture = this.textures[Math.floor(Math.random() * this.textures.length)];
 
-            let color = color_choices[Math.floor(Math.random() * 6)];
-            let material = new THREE.MeshStandardMaterial({ color: color });
+            let material = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                depthWrite: false,
+                alphaTest: 0.5,
+                side: THREE.DoubleSide
+            });
 
-            let torus = new THREE.Mesh(torusGeometry, material);
-            torus.position.copy(point);
-            
-            torus.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-            
-            this.scene.add(torus);
-            this.vine_leaves.push(torus);
+            let quadGeometry = new THREE.PlaneGeometry(0.1 * 4, 0.2 * 4);
+            let quad1 = new THREE.Mesh(quadGeometry, material);
+            let quad2 = new THREE.Mesh(quadGeometry, material);
+
+            quad2.rotation.y = Math.PI / 2;
+
+            let vineGroup = new THREE.Group();
+            vineGroup.add(quad1);
+            vineGroup.add(quad2);
+
+            vineGroup.position.copy(point);
+            this.scene.add(vineGroup);
+            this.vine_leaves.push(vineGroup);
         }
         
     }
@@ -98,11 +144,29 @@ export class Vine {
             }
         }
                 
-        // Finally, draw the spline in real time
-        for (let i = 0; i < this.num_vine_leaves; i++) {
-            let t = i / this.num_vine_leaves;
-            let point = this.spline.getPoint(t);
-            this.vine_leaves[i].position.copy(point);    
+        // // Finally, draw the spline in real time
+        // for (let i = 0; i < this.num_vine_leaves; i++) {
+        //     let t = i / this.num_vine_leaves;
+        //     let point = this.spline.getPoint(t);
+        //     this.vine_leaves[i].position.copy(point);    
+        // }
+
+        let lastPoint = this.spline.getPoint(0);
+        for (let i = 1; i < this.num_vine_leaves ; i++) {
+            let currentPoint = this.spline.getPoint(i / this.num_vine_leaves);
+
+            let direction = new THREE.Vector3().subVectors(lastPoint, currentPoint).normalize();
+            let up = new THREE.Vector3(0, 1, 0);
+            
+            let quaternion = new THREE.Quaternion().setFromUnitVectors(up, direction);
+            this.vine_leaves[i].position.copy(currentPoint);
+            this.vine_leaves[i].quaternion.copy(quaternion);
         }
+
+        // Handle the last leaf separately (no next point available)
+        // if (this.num_vine_leaves > 0) {
+        //     let lastPoint = this.particle_system.particles[this.num_vine_leaves - 1].position;
+        //     this.vine_leaves[this.num_vine_leaves - 1].position.copy(lastPoint);
+        // }
     }
 }
