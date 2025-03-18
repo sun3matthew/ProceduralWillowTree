@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { HermiteSpline } from './HermiteSpline.js';
 import { Vine } from './Vine.js';
+import { Swing } from './Swing.js';
 
 export class WillowTree {
     constructor(scene) {
@@ -17,10 +18,11 @@ export class WillowTree {
         });
 
         this.scene = scene;
-        this.num_branches = 8;
+        this.num_branches = 16;
         this.branches = [];
         this.vine_points = [];
         this.vines = [];
+        this.swings = [];
         this.initTree();
     }
 
@@ -34,9 +36,11 @@ export class WillowTree {
         // For the sake of symmetry, we replicate the remaining branches by reflecting across the x y and z axes
         let branch_starting_directions = []
 
+        let starting_y_directions = [0.5*Math.abs(Math.random()), 0.5*Math.abs(Math.random()) + 0.5, 0.25*Math.abs(Math.random()) + 1, 0.5*Math.abs(Math.random()) + 1]
+
         // Initialize first entries (in this case, 2 branches)
         for (let i = 0; i < Number(this.num_branches/4); i++) {
-            branch_starting_directions.push(new THREE.Vector3(0.5*(Math.random()-0.5), 0.5*Math.abs(Math.random())+0.1, 0.5*(Math.random()-0.5)));
+            branch_starting_directions.push(new THREE.Vector3(0.5*(Math.random()-0.5), starting_y_directions[i], 0.5*(Math.random()-0.5)));
         }
 
         // Concatenate two times over to get list of length 8
@@ -71,6 +75,10 @@ export class WillowTree {
             // Recursively add branches
             let branch_points = [default_trunk_points[0], default_trunk_points[1]];
             branch_points = this.addBranch(branch_points, remaining_branch_length, x_direction, y_direction, z_direction, 1, start_thickness);
+
+            if (i == 0) {
+                this.swings.push(new Swing(this.scene, branch_points[branch_points.length - 2]));
+            }
         }
         
     }
@@ -192,9 +200,11 @@ export class WillowTree {
             prevPoint = point;
             prevThickness = thickness;
 
+            
             if (remaining_branch_length < 7){
                 this.vines.push(new Vine(this.scene, point));
             }
+                
         }
         
         return spline;
