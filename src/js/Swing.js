@@ -14,14 +14,14 @@ export class Swing {
         this.particle_system = new MassSpringSystem(true);
 
         // Number of particles tied to the height of the vine; the higher the viner, the more points we have
-        this.num_particles = 4+4*(Math.floor(vine_point.y*Math.random())+2);
-        this.num_vine_leaves = 6*this.num_particles;
+        this.num_particles = 4+Math.floor(4*vine_point.y);
+        this.num_vine_leaves = 4*this.num_particles;
 
         // Spring stuff
         const mass = 0.01;
         const damping = 500+500*Math.random();
-        const elasticity = 25+25*Math.random();
-        const rest_length = 0.1;
+        const elasticity = 25;
+        const rest_length = 0.075;
 
         // Spheres to draw vine
         this.vine_leaves = []
@@ -114,10 +114,14 @@ export class Swing {
         }
                 
         // Finally, draw the spline in real time
-        for (let i = 0; i < this.num_vine_leaves; i++) {
+        for (let i = 0; i < this.num_vine_leaves -1 ; i++) {
             let t = i / this.num_vine_leaves;
             let point = this.spline.getPoint(t);
             this.vine_leaves[i].position.copy(point);    
         }
+        let t = 1;
+        let point = this.spline.getPoint(t);
+        point.y -= 0.25;
+        this.vine_leaves[this.num_vine_leaves - 1].position.copy(point);  
     }
 }
