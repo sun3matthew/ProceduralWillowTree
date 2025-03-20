@@ -8,6 +8,7 @@ import { LeafParticles } from './LeafParticles.js';
 import { ButterflyScene } from './ButterflyScene.js';
 import { WillowTree } from './WillowTree.js';
 import { Vine } from './Vine.js';
+import { Swing } from './Swing.js';
 
 
 import waterVertexShader from '../glsl/water.vert?raw';
@@ -85,6 +86,7 @@ const willowTree = new WillowTree(scene);
 scene.add(willowTree);
 
 const vines = willowTree.vines; //[];
+const swings = willowTree.swings;
 //willowTree.vine_points.forEach(vine_point => vines.push(new Vine(scene, vine_point)));
 
 // Animation Loop
@@ -98,6 +100,7 @@ function animate() {
     // butterflyScene.update();
 
     vines.forEach(vine => vine.update());
+    swings[0].update();
 
     controls.update();
     renderer.render(scene, camera);
